@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/CelianR/drain"
+	"github.com/faceair/drain"
 )
 
 func main() {
