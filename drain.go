@@ -26,8 +26,14 @@ type LogCluster struct {
 	size              int
 }
 
+func (c *LogCluster) ID() int {
+	return c.id
+}
 func (c *LogCluster) Size() int {
 	return c.size
+}
+func (c *LogCluster) SetSize(size int) {
+	c.size = size
 }
 func (c *LogCluster) getTemplate() string {
 	return strings.Join(c.logTemplateTokens, " ")
