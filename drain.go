@@ -125,22 +125,25 @@ func (d *Drain) Clusters() []*LogCluster {
 }
 
 func (d *Drain) Train(content string) *LogCluster {
-	contentTokens := d.getContentAsTokens(content)
+	contentTokens := d.GetContentAsTokens(content)
+	return d.TrainFromTokens(contentTokens)
+}
 
-	matchCluster := d.treeSearch(d.rootNode, contentTokens, d.config.SimTh, false)
+func (d *Drain) TrainFromTokens(tokens []string) *LogCluster {
+	matchCluster := d.treeSearch(d.rootNode, tokens, d.config.SimTh, false)
 	// Match no existing log cluster
 	if matchCluster == nil {
 		d.clustersCounter++
 		clusterID := d.clustersCounter
 		matchCluster = &LogCluster{
-			logTemplateTokens: contentTokens,
+			logTemplateTokens: tokens,
 			id:                clusterID,
 			size:              1,
 		}
 		d.idToCluster.Set(clusterID, matchCluster)
 		d.addSeqToPrefixTree(d.rootNode, matchCluster)
 	} else {
-		newTemplateTokens := d.createTemplate(contentTokens, matchCluster.logTemplateTokens)
+		newTemplateTokens := d.createTemplate(tokens, matchCluster.logTemplateTokens)
 		matchCluster.logTemplateTokens = newTemplateTokens
 		matchCluster.size++
 		// Touch cluster to update its state in the cache.
@@ -151,12 +154,16 @@ func (d *Drain) Train(content string) *LogCluster {
 
 // Match against an already existing cluster. Match shall be perfect (sim_th=1.0). New cluster will not be created as a result of this call, nor any cluster modifications.
 func (d *Drain) Match(content string) *LogCluster {
-	contentTokens := d.getContentAsTokens(content)
-	matchCluster := d.treeSearch(d.rootNode, contentTokens, 1.0, true)
+	contentTokens := d.GetContentAsTokens(content)
+	return d.MatchFromTokens(contentTokens)
+}
+
+func (d *Drain) MatchFromTokens(tokens []string) *LogCluster {
+	matchCluster := d.treeSearch(d.rootNode, tokens, 1.0, true)
 	return matchCluster
 }
 
-func (d *Drain) getContentAsTokens(content string) []string {
+func (d *Drain) GetContentAsTokens(content string) []string {
 	content = strings.TrimSpace(content)
 	for _, extraDelimiter := range d.config.ExtraDelimiters {
 		content = strings.Replace(content, extraDelimiter, " ", -1)
