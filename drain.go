@@ -35,11 +35,11 @@ func (c *LogCluster) Size() int {
 func (c *LogCluster) SetSize(size int) {
 	c.size = size
 }
-func (c *LogCluster) getTemplate() string {
+func (c *LogCluster) GetTemplate() string {
 	return strings.Join(c.logTemplateTokens, " ")
 }
 func (c *LogCluster) String() string {
-	return fmt.Sprintf("id={%d} : size={%d} : %s", c.id, c.size, c.getTemplate())
+	return fmt.Sprintf("id={%d} : size={%d} : %s", c.id, c.size, c.GetTemplate())
 }
 
 func createLogClusterCache(maxSize int) *LogClusterCache {
@@ -362,4 +362,37 @@ func (d *Drain) createTemplate(seq1, seq2 []string) []string {
 		}
 	}
 	return retVal
+}
+
+func (c *Config) MemoryUsage() int64 {
+	delimSize := 0
+	for _, extraDelimiter := range c.ExtraDelimiters {
+		delimSize += len(extraDelimiter) + 1
+	}
+	return int64(4*4 + 8*3 + delimSize)
+}
+
+func (lc *LogCluster) MemoryUsage() int64 {
+	logTemplateSize := 0
+	for _, token := range lc.logTemplateTokens {
+		logTemplateSize += len(token) + 1
+	}
+	return int64(logTemplateSize + 4*2 + 8)
+}
+
+func (lcc *LogClusterCache) MemoryUsage() int64 {
+	// This is an approximation
+	return int64(lcc.cache.Len() * (8 * 3))
+}
+
+func (n *Node) MemoryUsage() int64 {
+	childNodeSize := int64(0)
+	for key, childNode := range n.keyToChildNode {
+		childNodeSize += int64(8+len(key)+1) + childNode.MemoryUsage()
+	}
+	return childNodeSize + int64(8+4*len(n.clusterIDs))
+}
+
+func (d *Drain) MemoryUsage() int64 {
+	return 3*8 + 4 + d.config.MemoryUsage() + d.rootNode.MemoryUsage() + d.idToCluster.MemoryUsage()
 }
